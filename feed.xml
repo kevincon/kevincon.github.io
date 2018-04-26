@@ -1,0 +1,537 @@
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.7.3">Jekyll</generator><link href="https://kevintechnology.com/feed.xml" rel="self" type="application/atom+xml" /><link href="https://kevintechnology.com/" rel="alternate" type="text/html" /><updated>2018-04-26T07:09:38+00:00</updated><id>https://kevintechnology.com/</id><title type="html">Kevin Technology</title><subtitle>My name is Kevin Conley, and I am a versatile software engineer who loves improving developer productivity and infrastructure. \\
+ \\
+Previously I worked on graphics, UI, and application firmware for the [Intel Vaunt smart glasses](https://www.theverge.com/2018/2/5/16966530/intel-vaunt-smart-glasses-announced-ar-video) and several smart watches at [Pebble](https://www.pebble.com/).</subtitle><author><name>{&quot;social&quot;=&gt;{&quot;linkedin&quot;=&gt;&quot;kevincon&quot;, &quot;email&quot;=&gt;&quot;mailto:mail@kevintechnology.com&quot;}}</name></author><entry><title type="html">Porting Game Boy Emulators to the Pebble Time</title><link href="https://kevintechnology.com/2017/03/02/porting-game-boy-emulators-to-the-pebble-time.html" rel="alternate" type="text/html" title="Porting Game Boy Emulators to the Pebble Time" /><published>2017-03-02T06:38:12+00:00</published><updated>2017-03-02T06:38:12+00:00</updated><id>https://kevintechnology.com/2017/03/02/porting-game-boy-emulators-to-the-pebble-time</id><content type="html" xml:base="https://kevintechnology.com/2017/03/02/porting-game-boy-emulators-to-the-pebble-time.html">&lt;p&gt;I worked on UI and graphics firmware at &lt;a href=&quot;https://en.wikipedia.org/wiki/Pebble_%28watch%29&quot;&gt;Pebble&lt;/a&gt; from April 2015 until the company was &lt;a href=&quot;https://investor.fitbit.com/press/press-releases/press-release-details/2016/Fitbit-Inc-Acquires-Assets-from-Pebble/default.aspx&quot;&gt;acquired by Fitbit&lt;/a&gt; in December 2016. One of my favorite internal hackathon projects I worked on with some Pebble coworkers involved porting &lt;a href=&quot;https://en.wikipedia.org/wiki/Game_Boy&quot;&gt;Game Boy&lt;/a&gt; &lt;a href=&quot;https://en.wikipedia.org/wiki/Emulator&quot;&gt;emulators&lt;/a&gt; to the &lt;a href=&quot;https://en.wikipedia.org/wiki/Pebble_Time&quot;&gt;Pebble Time&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;We worked on two versions of this project; one version ported a Game Boy emulator into a custom version of the Pebble Time firmware, and another version ported a different Game Boy emulator into a regular Pebble Time app built with the public Pebble SDK.&lt;/p&gt;
+
+&lt;p&gt;Both versions only ran original Game Boy ROMs (i.e. no Game Boy Color ROMs), although they both did support games with custom color palettes.&lt;/p&gt;
+
+&lt;h2 id=&quot;version-one-custom-firmware&quot;&gt;Version One: Custom Firmware&lt;/h2&gt;
+
+&lt;p&gt;Around May 2015 I worked with &lt;a href=&quot;https://www.linkedin.com/in/varunred/&quot;&gt;Varun Reddy&lt;/a&gt; to port a Game Boy emulator called &lt;a href=&quot;https://bitboxconsole.blogspot.fr/2014/01/bitboy-bitbox-emulator-for-bitbox.html&quot;&gt;BitBoy&lt;/a&gt; (which is itself an ARM port of the &lt;a href=&quot;https://sourceforge.net/projects/gnuboy/&quot;&gt;gnuboy Game Boy emulator&lt;/a&gt;) to the Pebble Time.&lt;/p&gt;
+
+&lt;p&gt;We picked BitBoy because it was written in C and had already been demonstrated to run on the ARM Cortex M4 STM32F405 CPU (168 MHz 192 KB RAM), which is in the same family of processors as the Pebble Time’s ARM Cortex M4 STM32F439ZG CPU (run at 100 MHz, 256 KB RAM).&lt;/p&gt;
+
+&lt;p&gt;We ported BitBoy into a modified version of the Pebble firmware instead of as a regular Pebble SDK app for a few important reasons:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Game Boy emulation requires more RAM than is available to Pebble SDK apps (only 64 KB for RAM and code combined), so by building the emulator into the firmware we could resize the firmware’s RAM partitions to support the emulator’s memory requirements&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://developer.pebble.com/guides/app-resources/&quot;&gt;Pebble SDK apps only get 256 KB of resource storage&lt;/a&gt;, so building the emulator into the firmware gave us unrestricted access to the watch’s flash storage for storing ROMs (necessary for large ROMs such as Pokemon Red which has a size of 1 MB)&lt;/li&gt;
+  &lt;li&gt;We wanted to connect an NES controller to the emulator via the Pebble Time’s smartstrap port, and, at the time, the &lt;a href=&quot;https://developer.pebble.com/guides/smartstraps/talking-to-smartstraps/&quot;&gt;smartstrap APIs&lt;/a&gt; had not yet been released in the public Pebble SDK&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Before we added smartstrap support for the NES controller, we used the following button control scheme for testing the emulator:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://kevintechnology.com/assets/pebble-gameboy-controls.png&quot; alt=&quot;Diagram explaining how Pebble buttons map to Game Boy controls&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Note that we reserved the back button for easily exiting the emulator app.&lt;/p&gt;
+
+&lt;p&gt;By utilizing &lt;a href=&quot;https://en.wiktionary.org/wiki/frameskip&quot;&gt;frameskip&lt;/a&gt; we were able to achieve performance of about 24 FPS, making this version of the Pebble Game Boy emulator reasonably playable.&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://www.linkedin.com/in/brian-gomberg-0a666037/&quot;&gt;Brian Gomberg&lt;/a&gt; worked on connecting an NES controller to the Game Boy emulator via the Pebble Time’s smartstrap port. He used an early version of the &lt;a href=&quot;https://www.seeedstudio.com/RePhone-Strap-Kit-for-Pebble-Time-p-2633.html&quot;&gt;Seeed Studio RePhone (Xadow) smart strap kit&lt;/a&gt; to interface the controller with the smartstrap port, and he modified our custom Pebble firmware to forward signals from the smartstrap port to the Game Boy emulator.&lt;/p&gt;
+
+&lt;p&gt;Here are some pictures of Pokemon Red running on the Pebble Time:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://kevintechnology.com/assets/pokemon-red1.jpg&quot; alt=&quot;Picture of Pokemon Red start screen running on the Pebble Time&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://kevintechnology.com/assets/pokemon-red2.jpg&quot; alt=&quot;Picture of Pokemon Red gameplay on the Pebble Time&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://kevintechnology.com/assets/nes-controller.jpg&quot; alt=&quot;Picture of NES controller connected to Pebble Time via smart strap to control the Game Boy emulator&quot; /&gt;&lt;/p&gt;
+
+&lt;h2 id=&quot;version-two-sdk-app&quot;&gt;Version Two: SDK App&lt;/h2&gt;
+
+&lt;p&gt;In August 2015 I worked with &lt;a href=&quot;https://heikobehrens.net/&quot;&gt;Heiko Behrens&lt;/a&gt; on another version of the Pebble Game Boy emulator. We ported an emulator called &lt;a href=&quot;https://github.com/RossMeikleham/PlutoBoy&quot;&gt;PlutoBoy&lt;/a&gt; using the public Pebble SDK so it could be side-loaded as a regular Pebble app. This was a fun challenge because:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;SDK apps have access to far less RAM than a built-in firmware app&lt;/li&gt;
+  &lt;li&gt;SDK apps only receive 256 KB of resource storage for ROMs (so unfortunately Pokemon is not an option)&lt;/li&gt;
+  &lt;li&gt;SDK resources are not stored contiguously in flash, which means trivial memory mapping of the ROM is not possible&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;We chose PlutoBoy as the emulator to port because it was written in C, ran on our Mac laptops using &lt;a href=&quot;https://www.libsdl.org/&quot;&gt;SDL&lt;/a&gt; (which made it fast and easy to test changes we made to the emulator to support the Pebble), and it was already structured in a way that abstracted hardware specifics to support multiple platforms (which made adding the Pebble Time as one more platform easy).&lt;/p&gt;
+
+&lt;p&gt;The Pebble SDK RAM constraints (only 64 KB for RAM and code combined) did not allow us to load any ROMs (the smallest being 32 KB) completely into memory, so instead we used a cache to load chunks of the ROM into memory on-demand. This method worked but was quite slow because the memory had to be copied from the kernel into userspace on each cache miss. At best it ran at only about 14 FPS and was not realistically playable.&lt;/p&gt;
+
+&lt;p&gt;Here is a video of Super Mario Land running on the Pebble Time in this version of the project, although note that the video is sped up 300% because of the slow performance:&lt;/p&gt;
+
+&lt;style&gt;.embed-container { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; } .embed-container iframe, .embed-container object, .embed-container embed { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }&lt;/style&gt;
+&lt;div class=&quot;embed-container&quot;&gt;    &lt;iframe title=&quot;YouTube video player&quot; width=&quot;640&quot; height=&quot;390&quot; src=&quot;//www.youtube.com/embed/_mN2sLMxcsw&quot; frameborder=&quot;0&quot; allowfullscreen=&quot;&quot;&gt;&lt;/iframe&gt;&lt;/div&gt;
+
+&lt;p&gt;As you can see in the video, we used the same button control scheme for this version as we did in the previous iteration of the project.&lt;/p&gt;
+
+&lt;h2 id=&quot;source-code&quot;&gt;Source Code&lt;/h2&gt;
+
+&lt;p&gt;I realize that some people may be interested in the source code from these projects, but unfortunately I cannot release them because I neither have access to them anymore nor do I own the code. These projects were done for internal hackathons and thus Pebble (now Fitbit) owns them.&lt;/p&gt;
+
+&lt;p&gt;However, I would be delighted to see other developers use the ideas from this article to port game emulators to the Pebble watches in their own projects. :)&lt;/p&gt;
+
+&lt;h2 id=&quot;conclusion&quot;&gt;Conclusion&lt;/h2&gt;
+
+&lt;p&gt;I enjoyed working on these projects with my coworkers because I grew up playing games like Pokemon on the Game Boy, and so it was fun to learn more about how the Game Boy hardware works as well as gain some experience porting 3rd party code to new hardware platforms (which I’ve already found useful in several other projects).&lt;/p&gt;
+
+&lt;h2 id=&quot;additional-resources&quot;&gt;Additional Resources&lt;/h2&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;a href=&quot;https://www.youtube.com/watch?v=HyzD8pNlpwI&quot;&gt;The Ultimate Game Boy Talk&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;http://gbdev.gg8.se/wiki/articles/Main_Page&quot;&gt;GbdevWiki&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://realboyemulator.wordpress.com/&quot;&gt;RealBoy emulator blog posts&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;http://imrannazar.com/GameBoy-Emulation-in-JavaScript:-The-CPU&quot;&gt;GameBoy Emulator in JavaScript article series&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;http://www.devrs.com/gb/files/gbmbcsiz.txt&quot;&gt;List of Game Boy cartridges and what memory bank controller they use&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;http://www.emulatronia.com/doctec/consolas/gameboy/Gmb-spec.txt&quot;&gt;Everything You Always Wanted To Know About GAMEBOY but were afraid to ask&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;em&gt;Many thanks to Heiko Behrens, Brian Gomberg, and Varun Reddy for reviewing drafts of this article and for their work on these projects.&lt;/em&gt;&lt;/p&gt;</content><author><name>{&quot;social&quot;=&gt;{&quot;linkedin&quot;=&gt;&quot;kevincon&quot;, &quot;email&quot;=&gt;&quot;mailto:mail@kevintechnology.com&quot;}}</name></author><category term="pebble" /><category term="gameboy" /><category term="emulator" /><category term="pokemon" /><category term="mario" /><category term="rom" /><category term="firmware" /><summary type="html">I worked on UI and graphics firmware at Pebble from April 2015 until the company was acquired by Fitbit in December 2016. One of my favorite internal hackathon projects I worked on with some Pebble coworkers involved porting Game Boy emulators to the Pebble Time.</summary></entry><entry><title type="html">Using Machine Learning to Recommend Heroes for Dota 2 Matches</title><link href="https://kevintechnology.com/2013/12/30/using-machine-learning-to-recommend-heroes-for.html" rel="alternate" type="text/html" title="Using Machine Learning to Recommend Heroes for Dota 2 Matches" /><published>2013-12-30T09:18:00+00:00</published><updated>2013-12-30T09:18:00+00:00</updated><id>https://kevintechnology.com/2013/12/30/using-machine-learning-to-recommend-heroes-for</id><content type="html" xml:base="https://kevintechnology.com/2013/12/30/using-machine-learning-to-recommend-heroes-for.html">&lt;p&gt;I took Stanford’s machine learning class, CS 229, this past quarter. For my final project, I worked with &lt;a href=&quot;https://www.linkedin.com/in/danieljamesperry&quot;&gt;Daniel Perry&lt;/a&gt; to apply a few different machine learning algorithms to the problem of recommending heroes for Dota 2 matches.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;TL;DR&lt;/strong&gt;: We achieved about 70% accuracy for predicting match outcomes based on hero selection alone using logistic regression, and we made a small improvement on that result using K-nearest neighbors.&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://github.com/kevincon/dotaml/blob/master/docs/final_report.pdf?raw=true&quot;&gt;Download final report&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://github.com/kevincon/dotaml&quot;&gt;Code on GitHub&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://kevintechnology.com/assets/dota2-screenshot.jpg&quot; alt=&quot;Screenshot of Dota 2 gameplay&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Introduction&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;Dota 2, the sequel to a Warcraft III mod called Defense of the Ancients (DotA), is an online multiplayer computer game that has attracted professional players and the arrival of international tournaments. Each match consists of two teams of five players controlling “heroes” with an objective of destroying the opposing team’s stronghold. There are 106 unique heroes in Dota 2 (circa December 2013).&lt;/p&gt;
+
+&lt;p&gt;Why work on a hero recommendation engine for Dota 2? A widely-believed conjecture is that the heroes chosen by each team drastically influences the outcome of the match. The positive and negative relationships between heroes can give one team an implicit advantage over the other team. Valve’s annual Dota 2 tournament, &lt;a href=&quot;http://wiki.teamliquid.net/dota2/The_International/2013#Prize_Pool&quot;&gt;The International&lt;/a&gt;, had a prize pool of over $2.8 million dollars in August 2013. With that much money on the line, professional teams recognize the importance of hero selection. Some matches take up to ten minutes for hero selection by both teams.&lt;/p&gt;
+
+&lt;p&gt;Professional players spend thousands of hours practicing the game, so they tend to gain an intuition for picking heroes. This “gut instinct” is not as accessible to more casual players, so we thought it would be interesting to explore how machine learning could help solve the problem of recommending heroes.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Related Work&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;In researching prior work, we discovered a web application called Dota 2 Counter-Pick (no longer available) that uses machine learning to recommend heroes for Dota 2 matches. From the website’s about page:&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;We model hero picking as a zero-sum-game and learn the game matrix by logistic regression. When suggesting picks and bans we assume that teams are mini-max agents that take turns picking one hero at a time.&lt;/p&gt;
+
+  &lt;p&gt;Our growing database includes over 1 million matches from the high skill bracket where players did not disconnect or leave. For 63% of these matches, our method predicted the winning team correctly based on picks alone.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;We were very inspired by the accuracy of Dota 2 Counter-Pick, and we set out to improve on their results.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Data Collection&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;We used the &lt;a href=&quot;https://wiki.teamfortress.com/wiki/WebAPI#Dota_2&quot;&gt;Steam Web API&lt;/a&gt; for collecting data about public Dota 2 matches. We wrote a Python script (called &lt;a href=&quot;https://github.com/kevincon/dotaml/blob/master/data_collection/dotabot2.py?source=cc&quot;&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;dotabot2.py&lt;/code&gt;&lt;/a&gt; in the GitHub repository) and set it up on a cron job to record data from the 500 most recent public matches every 20 minutes. We only considered matches that satisfied the following requirements:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;The game mode is either all pick, single draft, all random, random draft, captain’s draft, captain’s mode, or least played. These game modes are the closest to the true vision of Dota 2, and every hero has the potential to show up in a match.&lt;/li&gt;
+  &lt;li&gt;The skill level of the players is “very-high,” which corresponds to roughly the top 8% of players. We believe utilizing only very-high skill level matches allows us to best represent heroes at their full potential.&lt;/li&gt;
+  &lt;li&gt;No players leave the match before the game is completed. Such matches do not capture how the absent players’ heroes affect the outcome of the match.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;We filtered our dataset on some of these requirements after running &lt;code class=&quot;highlighter-rouge&quot;&gt;dotabot2.py&lt;/code&gt;, so that script’s &lt;code class=&quot;highlighter-rouge&quot;&gt;is_valid_match()&lt;/code&gt; function does not account for all three of these requirements.&lt;/p&gt;
+
+&lt;p&gt;The data for each match is structured as JSON and includes which heroes were chosen for each team, how those heroes performed over the course of the game, and which team ultimately won the game. We stored the JSON for each match in a MongoDB database during data collection.&lt;/p&gt;
+
+&lt;p&gt;We collected data for 56,691 matches between November 5, 2013 and December 7, 2013. We exported 90% of the matches from our database to form a training set of 51,022 matches. We exported the remaining 10% of our database to form a test set of 5,669 matches.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Picking a Feature Vector&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;Machine learning algorithms typically require an input query to be described as a vector of features. For our feature vector, we came up with the following scheme to describe which heroes were chosen by each team in a match:&lt;/p&gt;
+
+&lt;p&gt;In Dota 2 matches, one team is called the “radiant” and the other team is called the “dire.” These terms are roughly analogous to “home” and “away,” as they only determine the starting point of each team on the game world map, which is roughly symmetric.&lt;/p&gt;
+
+&lt;p&gt;There are 106 heroes in Dota 2 (circa December 2013), but the web API uses hero ID numbers that range from 1 to 108 (two hero IDs are not used), so for our algorithms we used a 216-element feature vector, &lt;code class=&quot;MathJax_Preview&quot;&gt;x&lt;/code&gt;&lt;script type=&quot;math/tex&quot;&gt;x&lt;/script&gt;, such that:&lt;/p&gt;
+
+&lt;pre class=&quot;MathJax_Preview&quot;&gt;&lt;code&gt;\begin{aligned}
+x_i &amp;amp;= \begin{dcases}
+        1 \text{  if a radiant player played as the hero with id } i\\
+        0, \text{ otherwise}
+        \end{dcases}\\
+x_{108+i} &amp;amp;= \begin{dcases}
+        1 \text{  if a dire player played as the hero with id } i\\
+        0, \text{ otherwise}
+        \end{dcases}
+\end{aligned}&lt;/code&gt;&lt;/pre&gt;
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;% &lt;![CDATA[
+\begin{aligned}
+x_i &amp;= \begin{dcases}
+        1 \text{  if a radiant player played as the hero with id } i\\
+        0, \text{ otherwise}
+        \end{dcases}\\
+x_{108+i} &amp;= \begin{dcases}
+        1 \text{  if a dire player played as the hero with id } i\\
+        0, \text{ otherwise}
+        \end{dcases}
+\end{aligned} %]]&gt;&lt;/script&gt;
+
+&lt;p&gt;We also defined our label, &lt;code class=&quot;MathJax_Preview&quot;&gt;y&lt;/code&gt;&lt;script type=&quot;math/tex&quot;&gt;y&lt;/script&gt;, to be:&lt;/p&gt;
+
+&lt;pre class=&quot;MathJax_Preview&quot;&gt;&lt;code&gt;\begin{aligned}
+y = \begin{dcases}
+        1 \text{ if the radiant team won}\\
+        0, \text{ otherwise}
+        \end{dcases}
+\end{aligned}&lt;/code&gt;&lt;/pre&gt;
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;\begin{aligned}
+y = \begin{dcases}
+        1 \text{ if the radiant team won}\\
+        0, \text{ otherwise}
+        \end{dcases}
+\end{aligned}&lt;/script&gt;
+
+&lt;p&gt;&lt;strong&gt;Making Predictions&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;Since our dataset contains information about heroes on teams in specific radiant vs. dire configurations, simply running our algorithms on each match in our dataset using the feature vector described above does not fully utilize all of the data.&lt;/p&gt;
+
+&lt;p&gt;Instead, we make predictions using the following procedure. Given a match feature vector, which we call &lt;code class=&quot;highlighter-rouge&quot;&gt;radiant_query&lt;/code&gt;:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Run the algorithm on &lt;code class=&quot;highlighter-rouge&quot;&gt;radiant_query&lt;/code&gt; to get &lt;code class=&quot;highlighter-rouge&quot;&gt;radiant_prob&lt;/code&gt;, the probability that the radiant team in &lt;code class=&quot;highlighter-rouge&quot;&gt;radiant_query&lt;/code&gt; wins the match.&lt;/li&gt;
+  &lt;li&gt;Construct &lt;code class=&quot;highlighter-rouge&quot;&gt;dire_query&lt;/code&gt; by swapping the radiant and dire teams in &lt;code class=&quot;highlighter-rouge&quot;&gt;radiant_query&lt;/code&gt; so that the radiant team is now the bottom half of the feature vector and the dire team is now the top half of the feature vector.&lt;/li&gt;
+  &lt;li&gt;Run the algorithm on &lt;code class=&quot;highlighter-rouge&quot;&gt;dire_query&lt;/code&gt; to get &lt;code class=&quot;highlighter-rouge&quot;&gt;dire_prob&lt;/code&gt;, the probability that the radiant team in &lt;code class=&quot;highlighter-rouge&quot;&gt;radiant_query&lt;/code&gt; loses the match if it was actually the dire team instead.&lt;/li&gt;
+  &lt;li&gt;Calculate the overall probability &lt;code class=&quot;highlighter-rouge&quot;&gt;overall_prob&lt;/code&gt; as the average of &lt;code class=&quot;highlighter-rouge&quot;&gt;radiant_prob&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;(1 - dire_prob)&lt;/code&gt;.&lt;/li&gt;
+  &lt;li&gt;Predict the outcome of the match specified by &lt;code class=&quot;highlighter-rouge&quot;&gt;radiant_query&lt;/code&gt; as the radiant team winning if &lt;code class=&quot;highlighter-rouge&quot;&gt;overall_prob &amp;gt; 0.5&lt;/code&gt; and as the dire team winning otherwise.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;This procedure accounts for matches in our dataset that might not have the team configuration of a given query in one direction (e.g. radiant vs. dire) but may have the configuration in the other direction (e.g. dire vs. radiant).&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Validating the Importance of Hero Selection Using Logistic Regression&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;Logistic regression is a model that predicts a binary output using a weighted sum of predictor variables. We first trained a simple logistic regression model with an intercept term to predict the outcome of a match.&lt;/p&gt;
+
+&lt;p&gt;A plot of our learning curve for logistic regression is shown below. The test accuracy of our model asymptotically approaches 69.8% at about an 18,000 training set size, indicating that 18,000 matches is an optimal training set size for our logistic regression model.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://kevintechnology.com/assets/dota2-logistic-regression.png&quot; alt=&quot;Plot of learning curve from using logistic regression&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;We believe that this logistic regression model shows that hero selection alone is an important indicator of the outcome of a Dota 2 match. However, since logistic regression is purely a weighted sum of our feature vector (which only indicates which heroes are on either team), logistic regression fails to capture the synergistic and antagonistic relationships between heroes.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Predicting Match Outcome Using K-Nearest Neighbors&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;K-nearest neighbors (KNN) is a non-parametric method for classification and regression that predicts objects’ class memberships based on the k-closest training examples in the feature space.&lt;/p&gt;
+
+&lt;p&gt;We chose to implement KNN in order to better model the relationships between heroes instead of simply taking into account wins when a hero is present.&lt;/p&gt;
+
+&lt;p&gt;At a high level, we continue to focus on wins and the hero composition of teams, however with KNN, we have an avenue to weigh matches according to how similar they are to a query match we are interested in. For example, if we are interested in projecting who will win a specific five on five matchup (our query match), a match with nine of the heroes from the query match present will give us more information on who will win the query match than a match with only one hero from the query match present.&lt;/p&gt;
+
+&lt;p&gt;We used a custom weight and distance function and chose to utilize all training examples as “nearest neighbors.” Our polynomial weight function described below aggressively gives less weight to dissimilar training examples:&lt;/p&gt;
+
+&lt;pre class=&quot;MathJax_Preview&quot;&gt;&lt;code&gt;\begin{aligned}
+w_i &amp;amp;= (\frac{ \sum_{j=1}^{216} AND(q_j, x^{(i)}_j)}{NUM\_IN\_QUERY})^d
+\end{aligned}&lt;/code&gt;&lt;/pre&gt;
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;% &lt;![CDATA[
+\begin{aligned}
+w_i &amp;= (\frac{ \sum_{j=1}^{216} AND(q_j, x^{(i)}_j)}{NUM\_IN\_QUERY})^d
+\end{aligned} %]]&gt;&lt;/script&gt;
+
+&lt;p&gt;Here, &lt;code class=&quot;MathJax_Preview&quot;&gt;x^{(i)}&lt;/code&gt;&lt;script type=&quot;math/tex&quot;&gt;x^{(i)}&lt;/script&gt; represents the feature vector for training match &lt;code class=&quot;MathJax_Preview&quot;&gt;i&lt;/code&gt;&lt;script type=&quot;math/tex&quot;&gt;i&lt;/script&gt; and is compared by the logical &lt;code class=&quot;MathJax_Preview&quot;&gt;AND&lt;/code&gt;&lt;script type=&quot;math/tex&quot;&gt;AND&lt;/script&gt; operator to query vector &lt;code class=&quot;MathJax_Preview&quot;&gt;q&lt;/code&gt;&lt;script type=&quot;math/tex&quot;&gt;q&lt;/script&gt;. Index &lt;code class=&quot;MathJax_Preview&quot;&gt;j&lt;/code&gt;&lt;script type=&quot;math/tex&quot;&gt;j&lt;/script&gt; represents the hero ID index of each respective vector. &lt;code class=&quot;MathJax_Preview&quot;&gt;NUM\_IN\_QUERY&lt;/code&gt;&lt;script type=&quot;math/tex&quot;&gt;NUM\_IN\_QUERY&lt;/script&gt; represents the number of heroes present in the query vector. For example, &lt;code class=&quot;MathJax_Preview&quot;&gt;NUM\_IN\_QUERY&lt;/code&gt;&lt;script type=&quot;math/tex&quot;&gt;NUM\_IN\_QUERY&lt;/script&gt; is 10 if the query contains all 5 heroes for each team.&lt;/p&gt;
+
+&lt;p&gt;The function is normalized to be between 0 and 1, and it gives more weight to matches that more closely resemble the query match. To do this, the function compares the query match vector to the training match vector and counts every instance where a hero is present in both vectors.&lt;/p&gt;
+
+&lt;p&gt;A larger &lt;code class=&quot;MathJax_Preview&quot;&gt;d&lt;/code&gt;&lt;script type=&quot;math/tex&quot;&gt;d&lt;/script&gt; parameter will result in similar matches getting much more weight than dissimilar matches. Alternatively, a low &lt;code class=&quot;MathJax_Preview&quot;&gt;d&lt;/code&gt;&lt;script type=&quot;math/tex&quot;&gt;d&lt;/script&gt;, for example &lt;code class=&quot;MathJax_Preview&quot;&gt;d = 1&lt;/code&gt;&lt;script type=&quot;math/tex&quot;&gt;d = 1&lt;/script&gt;, will result in each match being weighted solely by how many heroes in common the match has with the query match. Stated another way, a high &lt;code class=&quot;MathJax_Preview&quot;&gt;d&lt;/code&gt;&lt;script type=&quot;math/tex&quot;&gt;d&lt;/script&gt; will choose to put more emphasis on the synergistic and antagonistic relationships between heroes, while a lower &lt;code class=&quot;MathJax_Preview&quot;&gt;d&lt;/code&gt;&lt;script type=&quot;math/tex&quot;&gt;d&lt;/script&gt; will put more emphasis on the independent ability of a hero.&lt;/p&gt;
+
+&lt;p&gt;To choose the optimal &lt;code class=&quot;MathJax_Preview&quot;&gt;d&lt;/code&gt;&lt;script type=&quot;math/tex&quot;&gt;d&lt;/script&gt; dimension parameter described above, we used k-fold cross validation with &lt;code class=&quot;MathJax_Preview&quot;&gt;k = 2&lt;/code&gt;&lt;script type=&quot;math/tex&quot;&gt;k = 2&lt;/script&gt; on 20,000 matches from our training set and varied &lt;code class=&quot;MathJax_Preview&quot;&gt;d&lt;/code&gt;&lt;script type=&quot;math/tex&quot;&gt;d&lt;/script&gt; across otherwise identical KNN models.&lt;/p&gt;
+
+&lt;p&gt;Since KNN must compare the query match to every match in the training set and compute weights and probabilities, this process was quite slow and took about ten hours. Due to time constraints, using more folds or more matches would have taken too long to finish.&lt;/p&gt;
+
+&lt;p&gt;A graph of the accuracies achieved when varying the weight dimension for a KNN model trained on our training set and evaluated on our test set is shown below. We found the optimal weight dimension to be &lt;code class=&quot;MathJax_Preview&quot;&gt;d = 4&lt;/code&gt;&lt;script type=&quot;math/tex&quot;&gt;d = 4&lt;/script&gt;, which achieved a mean accuracy of 67.43% during the k-fold cross validation.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://kevintechnology.com/assets/dota2-k-fold-cross-validation.png&quot; alt=&quot;Graph of k-fold cross validation accuracy of weight dimension values&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;A plot of our learning curve for KNN is shown below. The test accuracy of our model monotonically increases with training set size up to nearly 70% for around 50,000 training matches. Because we do not see the learning curve level off, this may imply that more data could further improve our accuracy.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://kevintechnology.com/assets/dota2-knn.png&quot; alt=&quot;Plot of learning curve for KNN&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Recommending Heroes Based on Predicted Match Outcome&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;We recommend heroes for a team using a greedy search that considers every possible hero that could be added to the team and ranks the candidates by probability of the team winning against the opposing team if the candidate was added to the team.&lt;/p&gt;
+
+&lt;p&gt;Our recommendation engine is modular so that either of our algorithms could be used to recommend heroes. Given the ID numbers of the heroes on both teams, the recommendation engine proceeds as follows:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Create a feature vector for the match.&lt;/li&gt;
+  &lt;li&gt;Create a set of new feature vectors, each with a different candidate hero added to the original feature vector.&lt;/li&gt;
+  &lt;li&gt;Run an algorithm to compute the probability of victory with each feature vector from step 2, averaging the probabilities of the team winning in both radiant and dire configurations as described earlier.&lt;/li&gt;
+  &lt;li&gt;Sort the candidates by probability of victory to give ranked recommendations.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;&lt;strong&gt;Future Work&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;Despite the high accuracy of our K-nearest neighbor model, the performance was quite slow. The five data points we used in our learning curve took about four hours total to calculate, and the k-fold cross validation used to find the optimal weight dimension took over 12 hours.&lt;/p&gt;
+
+&lt;p&gt;We believe that the performance of our K-nearest neighbor model could be improved in a number of ways. First, the binary feature vector used could be stored as an integer in binary representation to improve memory usage. Second, the calculation of weighted distances could be parallelized across multiple CPU cores. Third, a GPU could be utilized to vectorize the weighted distance function calculations.&lt;/p&gt;
+
+&lt;p&gt;Although the version of the game did not change during the time we collected match data, a new patch is released for Dota 2 every few months that dramatically changes the balance of the game. Therefore, we believe that a sliding window of match history data that resets when a new patch is released could help maintain data relevancy. For this reason, it would be useful to find if there is a training match size for which performance levels off so that we could collect only as much data as is needed.&lt;/p&gt;
+
+&lt;p&gt;Finally, we could experiement with a different search algorithm for our recommendation engine such as A* which would account for the opposing team picking heroes that could counter our initial recommendations. However, due to time constraints we were not able to implement A* search for our recommendation engine.&lt;/p&gt;
+
+&lt;p&gt;Ultimately, we believe there are many promising directions which future explorations in this area could take.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Conclusion&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;We don’t claim to be experts on Dota 2 or machine learning, but we are encouraged by our results that machine learning could be an effective tool in recommending heroes for Dota 2 matches. Feel free to contribute to the &lt;a href=&quot;https://github.com/kevincon/dotaml&quot;&gt;project on GitHub&lt;/a&gt; and contact us with any questions.&lt;/p&gt;</content><author><name>{&quot;social&quot;=&gt;{&quot;linkedin&quot;=&gt;&quot;kevincon&quot;, &quot;email&quot;=&gt;&quot;mailto:mail@kevintechnology.com&quot;}}</name></author><category term="dota 2" /><category term="machine learning" /><category term="stanford" /><category term="cs229" /><category term="github" /><summary type="html">I took Stanford’s machine learning class, CS 229, this past quarter. For my final project, I worked with Daniel Perry to apply a few different machine learning algorithms to the problem of recommending heroes for Dota 2 matches.</summary></entry><entry><title type="html">Preventing Cheating at Hackathons</title><link href="https://kevintechnology.com/2013/09/15/preventing-cheating-at-hackathons.html" rel="alternate" type="text/html" title="Preventing Cheating at Hackathons" /><published>2013-09-15T17:57:00+00:00</published><updated>2013-09-15T17:57:00+00:00</updated><id>https://kevintechnology.com/2013/09/15/preventing-cheating-at-hackathons</id><content type="html" xml:base="https://kevintechnology.com/2013/09/15/preventing-cheating-at-hackathons.html">&lt;p&gt;&lt;img src=&quot;https://kevintechnology.com/assets/futurama-hackathon-cheating.jpg&quot; alt=&quot;Picture of Fry from Futurama with caption &amp;quot;Not sure if really good at programming or started coding before hackathon&amp;quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Here’s a conversation I’m sure you’ve experienced if you’ve ever been to a hackathon’s demo day:&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;You: Hey, what did you guys make this weekend?&lt;/p&gt;
+
+  &lt;p&gt;Them: We made X, let me show you a [video, slideshow, demo].&lt;/p&gt;
+
+  &lt;p&gt;You: Hey that’s pretty cool…so does it actually work?&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;h3 id=&quot;motivation-to-discuss-cheating&quot;&gt;Motivation to Discuss Cheating&lt;/h3&gt;
+
+&lt;p&gt;The idea of cheating at hackathons isn’t new, and &lt;a href=&quot;https://news.ycombinator.com/item?id=2240226&quot;&gt;others&lt;/a&gt; have written about suspected cheating at hackathons. Rob Spectre even (humorously) suggested that &lt;a href=&quot;https://github.com/RobSpectre/Talks/tree/master/How%20To%20Take%20Second%20Place%20at%20a%20Hackathon&quot;&gt;cheating is the easiest way to win first place at a hackathon&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;I’ll concede that talking about cheating at hackathons isn’t much fun. Despite the competitive atmosphere, my favorite aspect of hackathons is the sense of community I feel there when participants share their passion for tech and help each other learn how to use new programming languages and technologies.&lt;/p&gt;
+
+&lt;p&gt;Nevertheless, the stakes are becoming too high to ignore the notion of cheating at hackathons. This past weekend at the &lt;a href=&quot;http://2013f.pennapps.com/&quot;&gt;PennApps&lt;/a&gt; hackathon at the University of Pennsylvania, hackathon participants competed for over $27,000 in prizes. The &lt;a href=&quot;http://mhacks.org/&quot;&gt;MHacks&lt;/a&gt; hackathon at the University of Michigan, to be held next weekend, is offering over $30,000 in prizes.&lt;/p&gt;
+
+&lt;h3 id=&quot;types-of-cheating&quot;&gt;Types of Cheating&lt;/h3&gt;
+
+&lt;p&gt;I think there are three main types of hackathon cheating that should be addressed:&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;1. The demonstration of the hack is fake.&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;Depending on the hackathon, demonstrations might consist of a video submission, live presentation, or both.&lt;/p&gt;
+
+&lt;p&gt;Thanks to movie magic, videos can be altered/modified to make it look like the hack can do something it can’t. Even aspects of live demos can be faked. For example, return values can be hardcoded, disjoint parts of the hack can be made to appear to be connected, and results can be preloaded to hide the real-time speed of a hack.&lt;/p&gt;
+
+&lt;p&gt;Granted, there could be a grey area here if the hack 100% works but the time allotted to present is not enough to demonstrate a real-time demo. However, I think it is reasonable to ask for full disclosure of any shortcuts used.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;2. The hack is real, but the coding was done or started by the team before the start of the hackathon.&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;The complexity or polish of a hack might be observed to be too impressive to have been completed in a single day or weekend, and it can be difficult to prove otherwise. This is further complicated by the diverse range of skills and experiences amongst hackathon participants.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;3. The hack is real, but the coding was done by a larger team than allowed due to unauthorized remote teammates.&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;Thanks to the magic of the Internet, the work of building a hack can be delegated to remote teammates. Some hackathons allow this strategy, but most hackathons do have a teammate limit. Therefore, it can be difficult to police how many people were actually involved in building a hack.&lt;/p&gt;
+
+&lt;h3 id=&quot;proposals-to-prevent-cheating&quot;&gt;Proposals to Prevent Cheating&lt;/h3&gt;
+
+&lt;p&gt;&lt;strong&gt;1. Require all participants to submit their hack’s source code.&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;This may be the simplest way to help prevent cheating, yet many hackathons don’t require source code of projects to be submitted. It might be out of a desire to let participants maintain ownership of their code in case they would like to create a business around their project. I support that notion, but I believe that source code could be submitted to hackathon administrators without making the code open-source.&lt;/p&gt;
+
+&lt;p&gt;Some larger hackathons (including PennApps) have experimented with source code submission in the past, and one of the organizers told me that they have found communicating instructions for the submission to be too difficult. Teams like to use different methodologies for developing their code, and many teams wait until the last minute of the hackathon to put their code in the format required for submission, causing delays for late entries. Yet I believe that requiring source code submission for finalists is reasonable since there is more time available between the end of coding and the final presentations.&lt;/p&gt;
+
+&lt;p&gt;Additionally, hackathons could require source code to be version controlled. It wouldn’t be foolproof, but the timestamps and usernames associated with code commits could help alleviate concerns about work being done before the start of a hackathon or by unauthorized teammates.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;2. Create an “Audit Team” of experienced programmers and past hackathon participants to evaluate the integrity of hacks.&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;I think many instances of hackathon cheating could be prevented by just having a group of impartial people take a closer look at each of the hacks. Using experienced programmers and past hackathon participants would ensure that the right questions are asked, and if the source code is available for review then many instances of cheating could be easily identified.&lt;/p&gt;
+
+&lt;p&gt;For larger hackathons, it may be impossible to have an Audit Team review all hacks, but certainly the hacks that have been selected as finalists should be audited before they take the stage for final presentations.&lt;/p&gt;
+
+&lt;p&gt;Plus, “Audit Team” could be abbreviated to “A-Team”, so that’s kind of cool.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;3. Create an anonymous cheating tip line.&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;An anonymous tip line could notify the Audit Team or hackathon administrators if someone suspects a team of cheating or planning to cheat. False positives could be resolved by taking a look at the code and discussing the allegation with the accused team.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;4. Don’t make it about the prizes.&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;The motivation I pointed to for this discussion about cheating is how the growing pool of prizes at hackathons can encourage participants to use dishonest means to win that aren’t in the spirit of the event.&lt;/p&gt;
+
+&lt;p&gt;But what if those types of prizes didn’t exist? What if the reward for building the best hack was just a title or a trophy?&lt;/p&gt;
+
+&lt;p&gt;The formation of a &lt;a href=&quot;https://mlh.io/&quot;&gt;Major League Hacking organization&lt;/a&gt; for colleges was announced this past week at PennApps, and I really like how they plan on operating. Student participants at select college hackathons across the country can win points for their school by the merit of their hacks, and the school with the most points at the end of the season earns this kickass trophy:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://news.mlh.io/wp-content/uploads/2014/07/mlh-trophy-f2013-a1dc212d1e20338cd1f6436e6e7a886a.jpg&quot; alt=&quot;Picture of MLH trophy&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;I think it’d be great to see hackathons use this strategy of offering trophies/medals/certificates to honor hackers’ efforts instead of cash or new laptops for prizes.&lt;/p&gt;
+
+&lt;h3 id=&quot;conclusion&quot;&gt;Conclusion&lt;/h3&gt;
+
+&lt;p&gt;I love hackathons, and I’ve participated in several (11 at time of writing). I hate to think that the fun and spirit of community of hackathons could be overshadowed by cheating, but I think it’s good to start a discussion and think about incorporating some preventative measures.&lt;/p&gt;
+
+&lt;p&gt;Have you experienced cheating at a hackathon? Do you have ideas for preventing cheating? Join the discussion at &lt;a href=&quot;https://news.ycombinator.com/item?id=6389719&quot;&gt;Hacker News&lt;/a&gt;.&lt;/p&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;em&gt;Thanks to Dalton Banks, Daniel Conley, Alexey Komissarouk, Trisha Kothari, Varun Sampath, and Teddy Zhang for their feedback on this post.&lt;/em&gt;&lt;/p&gt;</content><author><name>{&quot;social&quot;=&gt;{&quot;linkedin&quot;=&gt;&quot;kevincon&quot;, &quot;email&quot;=&gt;&quot;mailto:mail@kevintechnology.com&quot;}}</name></author><category term="hackathon" /><category term="cheating" /><category term="audit" /><category term="open-source" /><category term="pennapps" /><summary type="html"></summary></entry><entry><title type="html">How to Determine if Your Compiler is Inlining Your Functions</title><link href="https://kevintechnology.com/2013/05/07/how-to-determine-if-your-compiler-is-inlining-your.html" rel="alternate" type="text/html" title="How to Determine if Your Compiler is Inlining Your Functions" /><published>2013-05-07T09:32:00+00:00</published><updated>2013-05-07T09:32:00+00:00</updated><id>https://kevintechnology.com/2013/05/07/how-to-determine-if-your-compiler-is-inlining-your</id><content type="html" xml:base="https://kevintechnology.com/2013/05/07/how-to-determine-if-your-compiler-is-inlining-your.html">&lt;p&gt;&lt;a href=&quot;https://en.wikipedia.org/wiki/Inline_function&quot;&gt;Inlining functions&lt;/a&gt; can potentially increase the performance of a program. When you mark a function with &lt;code class=&quot;highlighter-rouge&quot;&gt;inline&lt;/code&gt;, the compiler will try to expand calls to the function to actually be the body of the function.&lt;/p&gt;
+
+&lt;p&gt;The idea is that inlining a function will eliminate the overhead associated with calling that function, like pushing values onto the stack and triggering a context switch. However, depending on the program, performance could actually get worse because inlining functions increases the overall size of the code which can lead to instruction cache memory thrashing (i.e. the computer can’t keep all of the instructions in its faster, short-term memory).&lt;/p&gt;
+
+&lt;p&gt;To ask the compiler to inline a function in C, you can use the &lt;code class=&quot;highlighter-rouge&quot;&gt;inline&lt;/code&gt; keyword when declaring your function:&lt;/p&gt;
+
+&lt;div class=&quot;language-c highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kr&quot;&gt;inline&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;plus_one&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;x&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;x&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;In the example above, we inline the (not very useful) &lt;code class=&quot;highlighter-rouge&quot;&gt;plus_one()&lt;/code&gt; function because it only has one instruction and therefore saving the overhead of performing a full context switch is a useful optimization.&lt;/p&gt;
+
+&lt;p&gt;Note that the &lt;code class=&quot;highlighter-rouge&quot;&gt;inline&lt;/code&gt; keyword usually only asks the compiler to inline a function. The compiler might analyze the program and actually not inline a function, even if it has the &lt;code class=&quot;highlighter-rouge&quot;&gt;inline&lt;/code&gt; keyword, because it thinks the inlining will not increase performance.&lt;/p&gt;
+
+&lt;p&gt;This leaves developers wondering “did the compiler actually inline my function?”&lt;/p&gt;
+
+&lt;p&gt;Some people will advise you to use the &lt;code class=&quot;highlighter-rouge&quot;&gt;-Winline&lt;/code&gt; compiler flag to have the compiler output warnings/information about whether it is actually inlining the functions you precede with the &lt;code class=&quot;highlighter-rouge&quot;&gt;inline&lt;/code&gt; keyword. But depending on your compiler, this might not be very useful. For example, here is the Intel’s C/C++ Compiler &lt;code class=&quot;highlighter-rouge&quot;&gt;icc&lt;/code&gt; inlining report output:&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&amp;lt;matmul.c;37:74;IPO INLINING;dotprod;0&amp;gt;
+INLINING REPORT: (dotprod) [1/2=50.0%]
+
+  -&amp;gt; _mm_add_pd(EXTERN)
+  -&amp;gt; _mm_mul_pd(EXTERN)
+  -&amp;gt; _m_empty(EXTERN)
+  -&amp;gt; _mm_setzero_pd(EXTERN)
+
+
+&amp;lt;matmul.c;79:128;IPO INLINING;matmul;0&amp;gt;
+INLINING REPORT: (matmul) [2/2=100.0%]
+
+  -&amp;gt; INLINE (MANUAL): dotprod(3) (isz = 34) (sz = 45 (21+24))
+    -&amp;gt; _mm_setzero_pd(EXTERN)
+    -&amp;gt; _m_empty(EXTERN)
+    -&amp;gt; _mm_mul_pd(EXTERN)
+    -&amp;gt; _mm_add_pd(EXTERN)
+  -&amp;gt; INLINE (MANUAL): dotprod(4) (isz = 34) (sz = 45 (21+24))
+    -&amp;gt; _mm_setzero_pd(EXTERN)
+    -&amp;gt; _m_empty(EXTERN)
+    -&amp;gt; _mm_mul_pd(EXTERN)
+    -&amp;gt; _mm_add_pd(EXTERN)
+  -&amp;gt; _vla_free(EXTERN)
+  -&amp;gt; _vla_alloc(EXTERN)
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;What the heck does all of that mean? A friend helped me understand that the percentages indicate the number of locations that the compiler decided to inline the function, but I was not able to find a good reference/guide on the Internet on how to interpret the output for &lt;code class=&quot;highlighter-rouge&quot;&gt;icc&lt;/code&gt;’s inlining report.&lt;/p&gt;
+
+&lt;p&gt;I have heard that &lt;code class=&quot;highlighter-rouge&quot;&gt;gcc&lt;/code&gt; has a more readable inlining report, but I have not tried it yet.&lt;/p&gt;
+
+&lt;p&gt;When I first wrote this blog post, I suggested looking at the generated assembly code to check if the compiler actually inlined the function. In the case of x86, this would involve searching for any “call” assembly instructions (“call” is the x86 way of calling a function).&lt;/p&gt;
+
+&lt;p&gt;However, a friend pointed out that this is not a perfect way of determining whether a compiler inlined functions. Besides the fact that it is architecture-specific (i.e. ARM and MIPS have different assembly instructions for calling functions):&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;It ignores indirect jumps, which is another valid way of calling a function (e.g. &lt;code class=&quot;highlighter-rouge&quot;&gt;leal %eax, jmp *%eax&lt;/code&gt;).&lt;/li&gt;
+  &lt;li&gt;The linker might make a “link-time optimization” (or LTO) which changes whether or not the function is inlined.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;So your best chance of understanding if your functions are being inlined is to look at the generated assembly code and the compiler’s inlining report, but even those resources might not tell the whole story.&lt;/p&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;em&gt;Thanks to Saleem Abdulrasool for providing some really helpful insights for this post.&lt;/em&gt;&lt;/p&gt;</content><author><name>{&quot;social&quot;=&gt;{&quot;linkedin&quot;=&gt;&quot;kevincon&quot;, &quot;email&quot;=&gt;&quot;mailto:mail@kevintechnology.com&quot;}}</name></author><category term="compiler" /><category term="inline" /><category term="icc" /><category term="programming" /><summary type="html">Inlining functions can potentially increase the performance of a program. When you mark a function with inline, the compiler will try to expand calls to the function to actually be the body of the function.</summary></entry><entry><title type="html">Review of Packt’s “Boost.Asio C++ Network Programming” eBook</title><link href="https://kevintechnology.com/2013/03/30/review-of-packts-boostasio-c-network.html" rel="alternate" type="text/html" title="Review of Packt's &quot;Boost.Asio C++ Network Programming&quot; eBook" /><published>2013-03-30T04:02:00+00:00</published><updated>2013-03-30T04:02:00+00:00</updated><id>https://kevintechnology.com/2013/03/30/review-of-packts-boostasio-c-network</id><content type="html" xml:base="https://kevintechnology.com/2013/03/30/review-of-packts-boostasio-c-network.html">&lt;p&gt;I was asked to review an eBook based on a &lt;a href=&quot;/2012/07/29/using-raw-sockets-in-asioboostasio.html&quot;&gt;blog post I wrote a while back on raw sockets in the Boost.Asio C++ library&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://kevintechnology.com/assets/ebook-zelda-reference.png&quot; alt=&quot;Screenshot of original Legend of Zelda &amp;quot;It's dangerous to go alone! Take this!&amp;quot; screen but with the sword replaced with the ebook being reviewed&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Summary&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;John Torjo’s &lt;a href=&quot;https://www.packtpub.com/application-development/boostasio-c-network-programming&quot;&gt;Boost.Asio C++ Network Programming&lt;/a&gt; ($34.99 print, $18.69 eBook from Packt Publishing) serves two purposes. First, it’s a great overview of the capabilities of the Asio/Boost.Asio C++ networking libraries. Second, it is a good companion/guide for geting started with Boost.Asio.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Content&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;There are seven chapters in the book:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Getting Started with Boost.Asio (a brief overview of the library, including its history/organization)&lt;/li&gt;
+  &lt;li&gt;Boost.Asio Fundamentals (an awesome walkthrough of the most important functions in the library)&lt;/li&gt;
+  &lt;li&gt;Echo Server/Clients (code examples of echo server/clients in synchronous/asynchronous and TCP/UDP configurations)&lt;/li&gt;
+  &lt;li&gt;Client and Server (code examples of more complicated synchronous/asynchronous server/client applications)&lt;/li&gt;
+  &lt;li&gt;Synchronous vs. Asynchronous (a fantastic guide to mixing synchronous and asynchronous programming, including some code examples of a proxy server)&lt;/li&gt;
+  &lt;li&gt;Boost.Asio - Other Features (describes some miscellaneous features of the Boost.Asio library, including special mechanisms for streams/buffers and co-routines)&lt;/li&gt;
+  &lt;li&gt;Boost.Asio - Advanced Topics (concludes the book by introducing a few advanced features like handler tracking, SSL support, and OS-specific quirks)&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;&lt;strong&gt;Pros&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;From the first chapter, it’s easy to tell that the author is very experienced with Boost.Asio. He offers advice while explaining concepts (“I don’t like this”, “I don’t think this would be a good idea”, etc.) which I found useful. I also liked the warnings he gives about common pitfalls, like the problems associated with copying sockets and what can happen if buffers/sockets go out of scope during asynchronous operations (spoiler: you have a bad time).&lt;/p&gt;
+
+&lt;p&gt;I liked the organization of information in the book. For example, in Chapter 2 (Boost.Asio Fundamentals), the author not only describes the parameters of each function in detail but also the signature for callback functions. All the information I need is right there in one place.&lt;/p&gt;
+
+&lt;p&gt;I also liked the overview of advanced features at the end of the book. I learned some things I didn’t know before, like how co-routines let you combine the benefits of synchronous and asynchronous programming. The author also takes some time to explain the pros and cons of using vanilla Asio vs. Boost.Asio.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Cons&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;My biggest complaint about this book is the formatting of the code examples. The code snippets have no newlines, so it can be difficult to read some of the longer examples. The code is also all in black and white, but I think it would be easier to read if the formatting included basic syntax highlighting. Thankfully, the code is available for download from the Packt website, and there are a few more newlines thrown in those files.&lt;/p&gt;
+
+&lt;p&gt;I also wish there were a few more diagrams to explain the ordering of events and function calls in the first few chapters. The rest of the book is okay, though; there is a nice diagram at the beginning of each example in the examples chapters (echo, nontrivial clients/servers, etc.).&lt;/p&gt;
+
+&lt;p&gt;Lastly, it would have been nice if the author had included a basic networking tutorial with concepts like the network stack and protocol basics. I guess if you’ve decided to work with a networking library like Boost.Asio, hopefully you already know the basics of networking.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Alternatives&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;This is the first Boost.Asio book I have looked at, but after reading this book I wanted to see how it compared to a few free books about Boost.Asio:&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://theboostcpplibraries.com/&quot;&gt;The Boost C++ Libraries by Boris Schaling&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;This free online book is formatted as a series of HTML pages, although it can be purchased as an eBook or PDF. It looks like it has been updated to a full-fledged eBook sold on Amazon, B&amp;amp;N, etc. to support the July 2011 version of the Boost libraries. Unlike the book I just reviewed, this online resource covers all of the Boost libraries, not just Boost.Asio. A downside to that approach is that it does not have as much detail or as many examples as the Packt book.&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://boost.cowic.de/rc/pdf/asio_doc.pdf&quot;&gt;Boost.Asio by Christopher Kohlhoff&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;This free online PDF was written by the author of the Boost.Asio library! I used it when I worked with Boost.Asio a while back, and it’s a great resource for pretty much everything you can do with the library. However, it is a little outdated (it was last modified in 2009).&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Verdict&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;I recommend the Packt Boost.Asio book to anyone who is planning to use the Boost.Asio library and is willing to spend a little money to get an up-to-date reference source. The author has a lot of expertise to share and the book has some great organization. The code snippets in the book are not formatted very well, but all of the code is available online for free so that’s not a big deal. And although there are free alternatives available online, they have not been updated in a while.&lt;/p&gt;</content><author><name>{&quot;social&quot;=&gt;{&quot;linkedin&quot;=&gt;&quot;kevincon&quot;, &quot;email&quot;=&gt;&quot;mailto:mail@kevintechnology.com&quot;}}</name></author><category term="review" /><category term="ebook" /><category term="c++" /><category term="boost" /><category term="asio" /><summary type="html">I was asked to review an eBook based on a blog post I wrote a while back on raw sockets in the Boost.Asio C++ library.</summary></entry><entry><title type="html">Formatting an SD Card for the Beagleboard(Xm,Bone) in Ubuntu 12.04</title><link href="https://kevintechnology.com/2012/08/17/formatting-an-sd-card-for-the-beagleboardxmbone.html" rel="alternate" type="text/html" title="Formatting an SD Card for the Beagleboard(Xm,Bone) in Ubuntu 12.04" /><published>2012-08-17T22:54:00+00:00</published><updated>2012-08-17T22:54:00+00:00</updated><id>https://kevintechnology.com/2012/08/17/formatting-an-sd-card-for-the-beagleboardxmbone</id><content type="html" xml:base="https://kevintechnology.com/2012/08/17/formatting-an-sd-card-for-the-beagleboardxmbone.html">&lt;p&gt;I about tore my hair out on this one.&lt;/p&gt;
+
+&lt;p&gt;The guys who make the Angstrom distribution of Linux have a script called &lt;code class=&quot;highlighter-rouge&quot;&gt;mkcard.txt&lt;/code&gt; (&lt;a href=&quot;http://downloads.angstrom-distribution.org/demo/beagleboard/&quot;&gt;http://downloads.angstrom-distribution.org/demo/beagleboard/&lt;/a&gt;) which has traditionally worked for me to format an SD card properly for the Beagleboard family of single-board computers.&lt;/p&gt;
+
+&lt;p&gt;But for some reason whenever I would run it in the last month or so on either Ubuntu 10.04 or Ubuntu 12.04, I would receive the following error and the card would not be properly formatted:&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;/dev/sdb2 is apparently in use by the system; will not make a filesystem
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;I found a path to the solution thanks to this askubuntu.com question: &lt;a href=&quot;https://askubuntu.com/questions/124565/mkfs-vfat-unable-to-open-dev-sdg1-device-or-resource-busy/164106#164106&quot;&gt;https://askubuntu.com/questions/124565/mkfs-vfat-unable-to-open-dev-sdg1-device-or-resource-busy/164106#164106&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;There seem to be two problems. The first is that &lt;code class=&quot;highlighter-rouge&quot;&gt;dmsetup&lt;/code&gt; is stealing the SD card devices.&lt;/p&gt;
+
+&lt;p&gt;The second problem is that the script calls &lt;code class=&quot;highlighter-rouge&quot;&gt;kpartx&lt;/code&gt; to add a partition mapping of the SD card you’re using to the &lt;code class=&quot;highlighter-rouge&quot;&gt;/dev/mapper&lt;/code&gt; folder. In English, this means that it will take the drive string (&lt;code class=&quot;highlighter-rouge&quot;&gt;“/dev/sdb”&lt;/code&gt; in my case), mount the partitions on the drive, and create device files for them in &lt;code class=&quot;highlighter-rouge&quot;&gt;/dev/mapper&lt;/code&gt;. I’m not sure why this causes the script to fail, but I’m guessing the system isn’t relinquishing control of the partition device files to the script so it can run &lt;code class=&quot;highlighter-rouge&quot;&gt;mkfs.vfat&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;mke2fs&lt;/code&gt; on them.&lt;/p&gt;
+
+&lt;p&gt;So anyway, to make the mkcard.txt script work, first run it once (and experience the error I referenced above).&lt;/p&gt;
+
+&lt;p&gt;Then, remove the stolen devices from dmsetup by running:&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;sudo dmsetup remove sdb1
+sudo dmsetup remove sdb2
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Finally, comment out the following lines in &lt;code class=&quot;highlighter-rouge&quot;&gt;mkcard.txt&lt;/code&gt;:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;[&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-x&lt;/span&gt; &lt;span class=&quot;sb&quot;&gt;`&lt;/span&gt;which kpartx&lt;span class=&quot;sb&quot;&gt;`&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;then
+    &lt;/span&gt;kpartx &lt;span class=&quot;nt&quot;&gt;-a&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;${&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;DRIVE&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;fi&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;And run &lt;code class=&quot;highlighter-rouge&quot;&gt;mkcard.txt&lt;/code&gt; one more time, and you should be good to go!&lt;/p&gt;</content><author><name>{&quot;social&quot;=&gt;{&quot;linkedin&quot;=&gt;&quot;kevincon&quot;, &quot;email&quot;=&gt;&quot;mailto:mail@kevintechnology.com&quot;}}</name></author><category term="beagleboard" /><category term="ubuntu" /><category term="sd card" /><category term="format" /><category term="angstrom" /><summary type="html">I about tore my hair out on this one.</summary></entry><entry><title type="html">Kevin on Broadcast Radio</title><link href="https://kevintechnology.com/2012/08/13/kevin-on-broadcast-radio.html" rel="alternate" type="text/html" title="Kevin on Broadcast Radio" /><published>2012-08-13T20:13:00+00:00</published><updated>2012-08-13T20:13:00+00:00</updated><id>https://kevintechnology.com/2012/08/13/kevin-on-broadcast-radio</id><content type="html" xml:base="https://kevintechnology.com/2012/08/13/kevin-on-broadcast-radio.html">&lt;p&gt;Did you know that I had a brief stint as a radio personality? Well, sort of…&lt;/p&gt;
+
+&lt;p&gt;When I was an undergraduate at the University of Pennsylvania, I was required to take a writing course. Many of the writing courses Penn offers are unexciting, but I was lucky to enroll in a course called “Writing for Radio.” The class was held at the local independent radio station, WXPN, which was about four blocks away from campus.&lt;/p&gt;
+
+&lt;p&gt;The course was a fun diversion from the math and science courses I was taking. We had four instructors, and each one was an actual radio host at WXPN. We spent ten weeks listening to a lot of radio, like news programs on NPR and band interviews that were recorded at WXPN. Our instructors taught us how to speak properly on the radio, like how to break up a radio script into bite-size chunks you can say without running out of breath.&lt;/p&gt;
+
+&lt;p&gt;The final project for this course was to go out into the world and interview someone about an event they were hosting. I hopped on a train to Wilmington, Delaware and interviewed a member of the Delaware Theatre Company. She was directing a Christmas play called “It’s a Wonderful Life: A Live Radio Play.” It’s basically the traditional story of “It’s a Wonderful Life,” but they tell it as if it were broadcast on the radio. So the actors and actresses on stage interact with a lot of props to create sound effects during the play. It seemed appropriate for an assignment to create a radio piece.&lt;/p&gt;
+
+&lt;p&gt;I really liked how the interview turned out, and WXPN even broadcast it live on the radio! Give it a listen and let me know what you think. Should I eventually return to radio?&lt;/p&gt;
+
+&lt;p&gt;Note: The audio levels aren’t that great, so you might turn up your volume to hear it better.&lt;/p&gt;
+
+&lt;div class=&quot;embed-container rich &quot;&gt;&lt;iframe width=&quot;100%&quot; height=&quot;400&quot; scrolling=&quot;no&quot; frameborder=&quot;no&quot; src=&quot;https://w.soundcloud.com/player/?visual=true&amp;amp;url=https%3A%2F%2Fapi.soundcloud.com%2Ftracks%2F56190303&amp;amp;show_artwork=true&quot;&gt;&lt;/iframe&gt;&lt;/div&gt;</content><author><name>{&quot;social&quot;=&gt;{&quot;linkedin&quot;=&gt;&quot;kevincon&quot;, &quot;email&quot;=&gt;&quot;mailto:mail@kevintechnology.com&quot;}}</name></author><category term="radio" /><category term="wxpn" /><category term="writing" /><category term="penn" /><summary type="html">Did you know that I had a brief stint as a radio personality? Well, sort of…</summary></entry><entry><title type="html">Using Raw Sockets in Asio/Boost.Asio</title><link href="https://kevintechnology.com/2012/07/29/using-raw-sockets-in-asioboostasio.html" rel="alternate" type="text/html" title="Using Raw Sockets in Asio/Boost.Asio" /><published>2012-07-29T22:55:29+00:00</published><updated>2012-07-29T22:55:29+00:00</updated><id>https://kevintechnology.com/2012/07/29/using-raw-sockets-in-asioboostasio</id><content type="html" xml:base="https://kevintechnology.com/2012/07/29/using-raw-sockets-in-asioboostasio.html">&lt;p&gt;This past week I got to play with the cross-platform Asio and Boost.Asio C++ libraries for socket programming.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://kevintechnology.com/assets/boost-y-u-no.jpg&quot; alt=&quot;boost.asio y u no inject packets?&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Unfortunately it turns out what I was trying to do (inject network packets) is not possible with these libraries, but in the process of trying to get that to work I was able to use the &lt;code class=&quot;highlighter-rouge&quot;&gt;basic_raw_socket&lt;/code&gt; template class successfully, which it looks like &lt;a href=&quot;https://stackoverflow.com/questions/8022452/boost-asio-raw-sockets&quot;&gt;several&lt;/a&gt; &lt;a href=&quot;https://d.hatena.ne.jp/devm33/20120208/1328718970&quot;&gt;other people&lt;/a&gt; on the Internet are having trouble with. So I’ve written up a GitHub repository with the code and a pretty detailed README. I hope it will help others understand how to use raw sockets in Asio better.&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://github.com/kevincon/asio-rawsockets-example&quot;&gt;https://github.com/kevincon/asio-rawsockets-example&lt;/a&gt;&lt;/p&gt;</content><author><name>{&quot;social&quot;=&gt;{&quot;linkedin&quot;=&gt;&quot;kevincon&quot;, &quot;email&quot;=&gt;&quot;mailto:mail@kevintechnology.com&quot;}}</name></author><category term="boost" /><category term="asio" /><category term="sockets" /><summary type="html">This past week I got to play with the cross-platform Asio and Boost.Asio C++ libraries for socket programming.</summary></entry><entry><title type="html">The Easy Way to install Scala on Mac OS X</title><link href="https://kevintechnology.com/2012/07/02/the-easy-way-to-install-scala-on-mac-os-x.html" rel="alternate" type="text/html" title="The Easy Way to install Scala on Mac OS X" /><published>2012-07-02T22:34:00+00:00</published><updated>2012-07-02T22:34:00+00:00</updated><id>https://kevintechnology.com/2012/07/02/the-easy-way-to-install-scala-on-mac-os-x</id><content type="html" xml:base="https://kevintechnology.com/2012/07/02/the-easy-way-to-install-scala-on-mac-os-x.html">&lt;p&gt;If you download Scala from the &lt;a href=&quot;https://www.scala-lang.org/downloads&quot;&gt;official site&lt;/a&gt;, it comes as a tgz archive of folders containing binaries. In other words, it’s a stand-alone install that you can put wherever you want. If you’re like me and would prefer Scala tucked away in the operating system, you’ll want to start by installing the awesome Mac package manager, &lt;a href=&quot;https://brew.sh/&quot;&gt;Homebrew&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;First, make sure you have Xcode installed (it’s free in the Mac App Store) with its optional command line tools installed (in Xcode go to Preferences, Downloads, and click “Install” next to Command Line Tools).&lt;/p&gt;
+
+&lt;p&gt;Next, install Homebrew by running the following in a terminal: &lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;/usr/bin/ruby -e &quot;$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)&quot;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;&lt;em&gt;Note: The above command is changed by the Homebrew guys from time to time. If the above command doesn’t seem to be working, check the Homebrew website for the latest incantation: &lt;a href=&quot;https://brew.sh/&quot;&gt;https://brew.sh/&lt;/a&gt;&lt;/em&gt;&lt;/p&gt;
+
+&lt;p&gt;Follow the instructions and enter your system password when prompted. Once Homebrew is installed, it’s super easy to install Scala by typing the following in a terminal:&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;brew install scala
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Homebrew will install Scala in &lt;code class=&quot;highlighter-rouge&quot;&gt;/usr/local&lt;/code&gt;, which is important for a &lt;a href=&quot;http://hivelogic.com/articles/using_usr_local/&quot;&gt;number of reasons&lt;/a&gt;, and it also puts the man pages for the Scala tools in the appropriate place.&lt;/p&gt;
+
+&lt;p&gt;If your next step is to learn Scala, I’m finding “Programming in Scala” to be very helpful. It was written by the creator of Scala, Martin Odersky, and the first edition is free online at &lt;a href=&quot;https://www.artima.com/pins1ed/&quot;&gt;https://www.artima.com/pins1ed/&lt;/a&gt;.&lt;/p&gt;</content><author><name>{&quot;social&quot;=&gt;{&quot;linkedin&quot;=&gt;&quot;kevincon&quot;, &quot;email&quot;=&gt;&quot;mailto:mail@kevintechnology.com&quot;}}</name></author><category term="scala" /><category term="homebrew" /><category term="mac" /><summary type="html">If you download Scala from the official site, it comes as a tgz archive of folders containing binaries. In other words, it’s a stand-alone install that you can put wherever you want. If you’re like me and would prefer Scala tucked away in the operating system, you’ll want to start by installing the awesome Mac package manager, Homebrew.</summary></entry><entry><title type="html">Programming Arduino Mega using avrdude</title><link href="https://kevintechnology.com/2012/06/15/programming-arduino-mega-using-avrdude.html" rel="alternate" type="text/html" title="Programming Arduino Mega using avrdude" /><published>2012-06-15T13:23:00+00:00</published><updated>2012-06-15T13:23:00+00:00</updated><id>https://kevintechnology.com/2012/06/15/programming-arduino-mega-using-avrdude</id><content type="html" xml:base="https://kevintechnology.com/2012/06/15/programming-arduino-mega-using-avrdude.html">&lt;p&gt;In case anyone ever needs to program an Arduino Mega using &lt;code class=&quot;highlighter-rouge&quot;&gt;avrdude&lt;/code&gt; but doesn’t want to run around the Internet looking for the command line settings, here you go:&lt;/p&gt;
+
+&lt;p&gt;Arduino Mega (ATmega 1280)&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;avrdude -p m1280 -c arduino -P /path/to/serial -b 57600 -F -U flash:w:/path/to/image.hex
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Arduino Mega (ATmega 2560)&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;avrdude -p m2560 -c stk500v2 -P /path/to/serial -b 115200 -F -U flash:w:/path/to/image.hex
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;</content><author><name>{&quot;social&quot;=&gt;{&quot;linkedin&quot;=&gt;&quot;kevincon&quot;, &quot;email&quot;=&gt;&quot;mailto:mail@kevintechnology.com&quot;}}</name></author><category term="arduino" /><category term="cli" /><summary type="html">In case anyone ever needs to program an Arduino Mega using avrdude but doesn’t want to run around the Internet looking for the command line settings, here you go:</summary></entry></feed>
